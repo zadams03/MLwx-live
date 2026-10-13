@@ -1,6 +1,6 @@
 # MLwx-live: issue every new GFS cycle (DECISIONS D103.7 to D103.9).
 #
-# Four times a day, about cycle + 4 h 10 min UTC (cycles at 00, 06, 12 and 18 UTC), and by hand.
+# Every hour at 40 minutes past (UTC), and by hand. A run with nothing new to issue only republishes the page.
 # Each run:
 #   1. checks out this repo (the log and the tracker state) and the MLwx code at ONE pinned commit;
 #   2. installs the pinned requirements;
@@ -8,19 +8,18 @@
 #   4. runs the runner: every cycle of the past 24 hours that has arrived and is not yet logged, in time order;
 #   5. commits the log files and the tracker state (the log is written once and never edited);
 #   6. publishes the static page to GitHub Pages;
-#   7. fails the job (so the owner is told) if any cycle issued nothing.
+#   7. fails the job (so the owner is told) if any cycle issued nothing (exit code 3). A cycle still
+#      waiting (exit code 2) is not a failure; the next hourly run tries again.
 #
-# Written in session 109 and NOT deployed. Session 110 (owner) sets the two values marked SET IN SESSION 110
-# below, creates the repo, and runs this by hand first.
+# This is a template: a commit cannot hold its own hash. The two values marked SET-AT-DEPLOY below
+# (MLWX_COMMIT and MODELS_TAG) are set by the owner at each deploy, and the deployed values are recorded
+# in DECISIONS (D104.2 for the first deploy, D104.5).
 
 name: live
 
 on:
   schedule:
-    - cron: "10 4 * * *"      # the 00 UTC cycle
-    - cron: "10 10 * * *"     # the 06 UTC cycle
-    - cron: "10 16 * * *"     # the 12 UTC cycle
-    - cron: "10 22 * * *"     # the 18 UTC cycle
+    - cron: "40 * * * *"      # every hour at :40 UTC
   workflow_dispatch:
     inputs:
       latest_only:
@@ -30,8 +29,8 @@ on:
 
 env:
   MLWX_REPO: zadams03/MLwx
-  MLWX_COMMIT: "0f89f0157ded0e26e12c3985ff80dd5eb504d197"     # SET IN SESSION 110
-  MODELS_TAG: "gfs-models-12"        # SET IN SESSION 110
+  MLWX_COMMIT: "e37c86d75d8a5f79c3abc236ca7caae0b9fb17c5"     # the 40-character commit of MLwx, set at each deploy
+  MODELS_TAG: "gfs-models-49"      # the release tag of the models, set at each deploy
   MODELS_FILE: gfs-models.tar
 
 # One run at a time: the log and the tracker state are written in time order.
@@ -54,7 +53,7 @@ jobs:
       - name: Stop if the placeholders are still there
         run: |
           case "$MLWX_COMMIT$MODELS_TAG" in
-            *SET-IN-SESSION-110*) echo "MLWX_COMMIT or MODELS_TAG is still a placeholder"; exit 1 ;;
+            *SET-AT-DEPLOY*) echo "MLWX_COMMIT or MODELS_TAG is still a placeholder"; exit 1 ;;
           esac
 
       - name: Check out this repo (the log and the state)
@@ -131,8 +130,8 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Fail the job if a cycle issued nothing (exit code 3) or is waiting (2)
-        if: steps.runner.outputs.code != '0'
+      - name: Fail the job if a cycle issued nothing (exit code 3)
+        if: steps.runner.outputs.code == '3'
         run: |
-          echo "The runner finished with exit code ${{ steps.runner.outputs.code }}; see its output above."
+          echo "The runner finished with exit code 3 (a cycle issued nothing); see its output above."
           exit 1
