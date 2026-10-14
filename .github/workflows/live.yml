@@ -29,7 +29,7 @@ on:
 
 env:
   MLWX_REPO: zadams03/MLwx
-  MLWX_COMMIT: "e37c86d75d8a5f79c3abc236ca7caae0b9fb17c5"     # the 40-character commit of MLwx, set at each deploy
+  MLWX_COMMIT: "d6ca3e4e9bd79d55ffbdfd1cc7a9a5d6e21747bb"     # the 40-character commit of MLwx, set at each deploy
   MODELS_TAG: "gfs-models-49"      # the release tag of the models, set at each deploy
   MODELS_FILE: gfs-models.tar
 
@@ -111,6 +111,7 @@ jobs:
           git config user.name "mlwx-live"
           git config user.email "mlwx-live@users.noreply.github.com"
           git add log state
+          if [ -d obs ]; then git add obs; fi
           if git diff --cached --quiet; then
             echo "nothing new to commit"
           else
