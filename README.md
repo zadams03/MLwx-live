@@ -3,7 +3,7 @@
 A corrected temperature forecast, issued automatically for every new GFS run, with an
 append-only record of what was issued.
 
-**Version 1** (GFS only). For each GFS run (00, 06, 12 and 18 UTC) it issues, for 12 airports:
+**Version 1** (GFS only). For each GFS run (00, 06, 12 and 18 UTC) it issues, for 49 airports:
 
 - a corrected 2 m air temperature for every whole hour from 3 to 48 hours ahead (the curve); and
 - for each local calendar day that lies wholly inside those hours, the day's maximum, read off the
@@ -13,8 +13,8 @@ The correction is a model fitted once on GFS version 16 data up to 31 July 2026 
 retraining), plus a running correction for drifting bias that uses only observations already in when
 a run starts.
 
-**No accuracy figure is computed or shown here.** Version 1 makes no claim. A test of the live
-forecasts will be written down in advance before anything is scored.
+**No accuracy figure is computed or shown here.** Version 1 makes no claim. The test of the live
+forecasts is pre-registered in DECISIONS D105.5 in the MLwx repo.
 
 ## The prediction log
 
@@ -40,13 +40,37 @@ every file is added in a commit made by the automated run, with the time it was 
 If anything is wrong with a run's data, that run issues **nothing**: there is no file for it, and the
 page says so. Nothing is ever filled in.
 
+## The observation snapshot
+
+`obs/YYYY/MM/gfs_YYYYMMDDHH.csv`: for each issued run, named like its log file, the observations the
+bias trackers looked up for that run. One row per airport and valid time, sorted by airport and valid
+time. Written once, after the log file, and never edited. A run with nothing to look up gets a file
+with only the header. A problem writing it never blocks or changes the log file; it is shown in the
+run's output.
+
+| column | meaning |
+|---|---|
+| `airport` | ICAO code |
+| `valid_utc` | the hour looked up |
+| `obs_c` | the observed temperature (deg C) of the routine report nearest that hour within 15 minutes; empty if none |
+| `report_utc` | the time of that report; empty if none |
+
+It holds no forecast and no error.
+
 ## The other folders
 
 - `state/tracker_gfs.json`: where each bias tracker had got to (b, the last valid time applied, the
-  count). A cache; the log is the record. Updated each run.
+  count), the runs that issued nothing and why, and the last run's time and status. A cache; the log
+  is the record. Committed when anything in it changes besides the last run's time.
 - `site/` is built by each run and published with GitHub Pages; it is not committed.
-- `.github/workflows/live.yml`: the schedule (about 4 hours 10 minutes after each run starts), plus a
-  manual trigger.
+- `.github/workflows/live.yml`: the schedule (every hour at 15 and 40 minutes past, UTC; GitHub
+  starts scheduled runs late or skips some; a GFS run is used from about 4 hours 10 minutes after it
+  starts), plus a manual trigger. Each run checks out the latest `main`. If anything changed besides
+  the last run's time in `state/`, the run commits `log/`, `obs/` and `state/`, pushes, and publishes
+  the page; otherwise it commits nothing and leaves the page as it was, so the page's build time
+  shows the last run that changed something. The job fails if the push did not land on `main` (the
+  page is then not published), or if a GFS run should have issued and did not (the runner's exit
+  code 3); a run still waiting for its data (code 2) is tried again at the next run.
 - `requirements.txt`: the exact Python packages.
 
 ## The code
