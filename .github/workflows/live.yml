@@ -33,7 +33,7 @@ on:
 
 env:
   MLWX_REPO: zadams03/MLwx
-  MLWX_COMMIT: "dad68db3ccbdfa930b7af6220d6df585a3cea2bd"     # the 40-character commit of MLwx, set at each deploy
+  MLWX_COMMIT: "9f22ade38e56230ac9d9ff6e6fb13a05da9f262d"     # the 40-character commit of MLwx, set at each deploy
   MODELS_TAG: "gfs-models-49"      # the release tag of the models, set at each deploy
   MODELS_FILE: gfs-models.tar
   MODELS_REPO: zadams03/MLwx-models  # the private repo that holds the models' Release (D126.3)
